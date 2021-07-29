@@ -1,47 +1,100 @@
 package br.com.lucasm.vendinha.domain;
 
 import java.math.BigDecimal;
-import java.util.Random;
+//import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.SplittableRandom;
 
 public class Compra {
 	
-	private Produto produto;
+	private Long id;
 	private Cliente cliente;
-	private Integer qtd;
-	private BigDecimal total;
-	private BigDecimal valorUnit;
-	private Random id;
-	
+	private List<ItemCompra> itens;
+	private LocalDateTime dataCompra;
+	private LocalDateTime dataPagamento;
+	private LocalDateTime dataCancelamento;
+	private EnumStatusPagamento status;
+	private BigDecimal valorPago;
+
 	public Compra(Cliente c, Produto p, Integer qtd) {
-		this.produto = p;
+		this.itens = new ArrayList<>();
+		this.dataCompra = LocalDateTime.now();
+		this.status = EnumStatusPagamento.AGUARDANDO;
+		this.id = new SplittableRandom().nextLong(1, Long.MAX_VALUE);
 		this.cliente = c;
-		this.qtd = qtd;
-		this.valorUnit = p.getValor();
-		this.total = p.getValor().multiply(BigDecimal.valueOf(this.qtd)); 
-		this.id = new Random();
+		this.addProduto(p, qtd);
 	}
 
-	public Random getId() {
-		return id;
+	public void addProduto(Produto p, Integer qtd) {
+		this.itens.add(new ItemCompra(p, qtd));
 	}
 
-	public BigDecimal getValorUnit() {
-		return valorUnit;
+	public void cancelar() {
+		this.status = EnumStatusPagamento.CANCELADO;
+		this.dataCancelamento = LocalDateTime.now();
+		// se tiver sido pago calcula o estorno
 	}
 
-	public Produto getProduto() {
-		return produto;
+	public BigDecimal pagar(BigDecimal dinheiro) {
+		if (EnumStatusPagamento.PAGO.equals(this.status)) {
+			throw new RuntimeException("Já estava pago");
+		}
+		if (Objects.isNull(dinheiro)) {
+			throw new RuntimeException("Dinheiro inválido");
+		}
+		if (dinheiro.compareTo(this.getTotal()) < 0) {
+			throw new RuntimeException("Dinheiro insuficiente");
+		}
+		
+		if (EnumStatusPagamento.CANCELADO.equals(this.status)) {
+			this.dataCancelamento = null;
+		}
+		this.status = EnumStatusPagamento.PAGO;
+		this.dataPagamento = LocalDateTime.now();
+		this.valorPago = dinheiro;
+		return dinheiro.subtract(this.getTotal());
 	}
 
 	public Cliente getCliente() {
 		return cliente;
 	}
 
-	public Integer getQtd() {
-		return qtd;
+	public Long getId() {
+		return id;
+	}
+
+	public List<ItemCompra> getItens() {
+		return itens;
 	}
 
 	public BigDecimal getTotal() {
-		return total;
+		BigDecimal soma = BigDecimal.ZERO;
+		for (ItemCompra i : itens) {
+			soma = soma.add(i.getTotal());
+		}
+		return soma;
+	}
+
+	public LocalDateTime getDataCompra() {
+		return dataCompra;
+	}
+
+	public LocalDateTime getDataPagamento() {
+		return dataPagamento;
+	}
+
+	public LocalDateTime getDataCancelamento() {
+		return dataCancelamento;
+	}
+
+	public EnumStatusPagamento getStatus() {
+		return status;
+	}
+
+	public BigDecimal getValorPago() {
+		return valorPago;
 	}
 }

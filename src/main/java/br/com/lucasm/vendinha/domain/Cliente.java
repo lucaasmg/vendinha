@@ -1,11 +1,15 @@
 package br.com.lucasm.vendinha.domain;
 
+import java.util.SplittableRandom;
+
 public class Cliente {
 
 	private String nome;
-	
+	private Long id;
+
 	public Cliente(String nome) { 
 		this.nome = nome;
+		this.id = new SplittableRandom().nextLong(1, Long.MAX_VALUE);
 	}
 	
 	public Compra comprar(Produto p, Integer qtd) {
@@ -14,5 +18,9 @@ public class Cliente {
 
 	public String getNome() {
 		return nome;
+	}
+	
+	public Long getId() {
+		return id;
 	}
 }
